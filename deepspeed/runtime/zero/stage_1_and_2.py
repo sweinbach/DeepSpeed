@@ -1336,6 +1336,8 @@ class DeepSpeedZeroOptimizer(object):
 
         if pg_correctness_test:
             communication_data_type = torch.float32
+        elif tensor.dtype == torch.bfloat16:
+            communication_data_type = torch.float32
 
         if communication_data_type != tensor.dtype:
             tensor_to_allreduce = tensor.to(communication_data_type)

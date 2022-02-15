@@ -417,7 +417,13 @@ class PipelineModule(nn.Module):
         '''All reduce the gradients of the tied weights between tied stages'''
         for key, comm in self.tied_comms.items():
             weight = getattr(self.tied_modules[key], comm['weight_attr'])
-            dist.all_reduce(weight.grad, group=comm['group'])
+
+            if weight.grad.dtype == torch.bfloat16:
+                tensor_to_allreduce = weight.grad.to(torch.float32)
+                dist.all_reduce(tensor_to_allreduce, group=comm['group'])
+                weight.grad.copy_(tensor_to_allreduce)
+            else:
+                dist.all_reduce(weight.grad, group=comm['group'])
 
     def _synchronize_tied_weights(self):
         for key, comm in self.tied_comms.items():
